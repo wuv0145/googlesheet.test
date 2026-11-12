@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>車險初步詢問</title>
+<style>
+  :root {
+    --navy: #06143a;
+    --blue: #1a5cff;
+    --sky: #19c3ff;
+    --ink: #0d1b3d;
+    --muted: #5b6b8c;
+    --line: #d6e0f5;
+    --field: #f4f8ff;
+    --ok: #12b886;
+    --err: #e5484d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 500px at 90% -10%, rgba(25,195,255,.35), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(26,92,255,.45), transparent 60%),
+      linear-gradient(160deg, #06143a 0%, #0a2466 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px; background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,10,50,.45), 0 0 0 1px rgba(25,195,255,.25);
+  }
+  .head {
+    padding: 28px 32px 24px; color: #fff;
+    background: linear-gradient(120deg, #0a2a8a 0%, var(--blue) 60%, var(--sky) 130%);
+    display: flex; gap: 16px; align-items: center;
+  }
+  .badge {
+    flex: none; width: 52px; height: 52px; border-radius: 14px;
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35);
+    display: grid; place-items: center;
+  }
+  .head h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: .02em; }
+  .head p { margin: 0; font-size: 14px; line-height: 1.5; opacity: .9; }
+  form, .done { padding: 28px 32px 32px; }
+  .field { margin-bottom: 20px; border: 0; padding: 0; min-width: 0; }
+  label, legend { display: block; padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+  input[type="text"], input[type="tel"] {
+    width: 100%; padding: 13px 14px; font: inherit; font-size: 16px; color: var(--ink);
+    background: var(--field); border: 1.5px solid var(--line); border-radius: 12px;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  input[type="text"]:focus, input[type="tel"]:focus {
+    outline: none; background: #fff; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(26,92,255,.15);
+  }
+  .invalid { border-color: var(--err) !important; }
+  .err-msg { display: none; margin-top: 6px; font-size: 13px; color: var(--err); }
+  .field.has-error .err-msg { display: block; }
+
+  /* 險種選項卡 */
+  .options { display: grid; gap: 10px; }
+  .opt { position: relative; }
+  .opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+  .opt .box {
+    display: flex; gap: 12px; align-items: flex-start; padding: 14px;
+    background: var(--field); border: 1.5px solid var(--line); border-radius: 12px;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .opt .dot {
+    flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%;
+    border: 2px solid #9db2de; background: #fff; display: grid; place-items: center;
+    transition: border-color .15s, background .15s;
+  }
+  .opt .dot::after {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: scale(0);
+    transition: transform .15s;
+  }
+  .opt strong { display: block; font-size: 15px; }
+  .opt small { display: block; margin-top: 2px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .opt:hover .box { border-color: #9db2de; }
+  .opt input:checked + .box {
+    background: #eaf1ff; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,92,255,.12);
+  }
+  .opt input:checked + .box .dot { border-color: var(--blue); background: var(--blue); }
+  .opt input:checked + .box .dot::after { transform: scale(1); }
+  .opt input:focus-visible + .box { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+  button.primary, button.ghost {
+    width: 100%; padding: 15px; border-radius: 12px; cursor: pointer;
+    font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .06em;
+  }
+  button.primary {
+    margin-top: 6px; border: 0; color: #fff;
+    background: linear-gradient(90deg, var(--blue), var(--sky));
+    box-shadow: 0 10px 24px rgba(26,92,255,.35);
+    transition: transform .12s, box-shadow .12s, opacity .12s;
+  }
+  button.primary:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(26,92,255,.45); }
+  button.primary:disabled { opacity: .65; cursor: wait; transform: none; }
+  button.ghost { margin-top: 20px; background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  button:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; }
+  .form-error {
+    display: none; margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+    background: #fff0f0; color: #b42318; font-size: 14px; line-height: 1.5;
+  }
+  .form-error.show { display: block; }
+
+  .done { display: none; text-align: center; padding-top: 40px; }
+  .done.show { display: block; }
+  .tick {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+    background: rgba(18,184,136,.12); display: grid; place-items: center;
+  }
+  .done h2 { margin: 0 0 8px; font-size: 20px; }
+  .done p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+  @media (max-width: 420px) { .head, form, .done { padding-left: 20px; padding-right: 20px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="card">
+  <header class="head">
+    <div class="badge" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13.5" r=".6" fill="#fff"/><circle cx="16.5" cy="13.5" r=".6" fill="#fff"/><path d="M5 11h14"/>
+      </svg>
+    </div>
+    <div>
+      <h1>車險初步詢問</h1>
+      <p>留下聯絡方式，專員會盡快與您聯繫。</p>
+    </div>
+  </header>
+
+  <form id="insuranceForm" novalidate>
+    <div class="field" id="f-name">
+      <label for="name">姓名</label>
+      <input type="text" id="name" autocomplete="name" placeholder="請輸入您的姓名" required>
+      <div class="err-msg">請輸入姓名</div>
+    </div>
+
+    <div class="field" id="f-phone">
+      <label for="phone">電話</label>
+      <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="例：0912-345-678" required>
+      <div class="err-msg">請輸入正確的電話號碼</div>
+    </div>
+
+    <fieldset class="field" id="f-type">
+      <legend>險種需求</legend>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="insuranceType" value="強制險">
+          <span class="box"><span class="dot"></span>
+            <span><strong>強制險</strong><small>法定必保，提供車禍時的基本傷亡保障</small></span></span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="insuranceType" value="第三人責任險">
+          <span class="box"><span class="dot"></span>
+            <span><strong>第三人責任險</strong><small>補足強制險不夠的部分，賠付對方的傷亡與財損</small></span></span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="insuranceType" value="車體險">
+          <span class="box"><span class="dot"></span>
+            <span><strong>車體險</strong><small>保障自己愛車的碰撞、竊盜等車損</small></span></span>
+        </label>
+      </div>
+      <div class="err-msg">請選擇一個險種</div>
+    </fieldset>
+
+    <button type="submit" class="primary" id="submitBtn">送出詢問</button>
+    <div class="form-error" id="formError" role="alert"></div>
+  </form>
+
+  <section class="done" id="done" aria-live="polite">
+    <div class="tick" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#12b886" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </div>
+    <h2>已收到您的詢問</h2>
+    <p>專員會盡快與您聯繫，<br>請留意來電。</p>
+    <button type="button" class="ghost" id="againBtn">再填一份</button>
+  </section>
+</main>
+
+<script>
+  // ⚠️ 請將下方的網址替換為您的 Google Apps Script 網頁應用程式網址
+  var webAppUrl = 'YOUR_WEB_APP_URL';
+
+  var form = document.getElementById('insuranceForm');
+  var done = document.getElementById('done');
+  var btn = document.getElementById('submitBtn');
+  var formError = document.getElementById('formError');
+
+  function setError(id, bad) {
+    document.getElementById(id).classList.toggle('has-error', bad);
+  }
+
+  function validate() {
+    var name = document.getElementById('name').value.trim();
+    var phone = document.getElementById('phone');
+    var digits = phone.value.replace(/[\s-]/g, '');
+    var checked = form.querySelector('input[name="insuranceType"]:checked');
+
+    var okName = name.length > 0;
+    var okPhone = /^(09\d{8}|0\d{1,2}\d{6,8}|\+?\d{8,15})$/.test(digits);
+    var okType = !!checked;
+
+    setError('f-name', !okName);
+    setError('f-phone', !okPhone);
+    setError('f-type', !okType);
+    document.getElementById('name').classList.toggle('invalid', !okName);
+    phone.classList.toggle('invalid', !okPhone);
+
+    if (!(okName && okPhone && okType)) return null;
+    return { name: name, phone: phone.value.trim(), insuranceType: checked.value };
+  }
+
+  form.addEventListener('input', function (e) {
+    var f = e.target.closest('.field');
+    if (f) f.classList.remove('has-error');
+    e.target.classList.remove('invalid');
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault(); // 防止表單預設的頁面跳轉
+    formError.classList.remove('show');
+
+    var formData = validate();
+    if (!formData) return;
+
+    if (webAppUrl === 'YOUR_WEB_APP_URL') {
+      formError.textContent = '尚未設定 Apps Script 網址，請先替換程式碼中的 webAppUrl。';
+      formError.classList.add('show');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '送出中…';
+
+    // 發送資料到 Google Sheets（text/plain 可避免 CORS 預檢請求）
+    fetch(webAppUrl, {
+      method: 'POST',
+      body: JSON.stringify(formData),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+      if (data.status === 'success' || data.success === true) {
+        form.reset();
+        form.style.display = 'none';
+        done.classList.add('show');
+      } else {
+        throw new Error(data.message || '寫入失敗');
+      }
+    })
+    .catch(function (error) {
+      console.error('Error:', error);
+      formError.textContent = '送出失敗，請檢查網路後再試一次。';
+      formError.classList.add('show');
+    })
+    .finally(function () {
+      btn.disabled = false;
+      btn.textContent = '送出詢問';
+    });
+  });
+
+  document.getElementById('againBtn').addEventListener('click', function () {
+    done.classList.remove('show');
+    form.style.display = '';
+    document.getElementById('name').focus();
+  });
+</script>
+</body>
+</html>
